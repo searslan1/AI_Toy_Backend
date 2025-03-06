@@ -1,3 +1,6 @@
 node_modules/
 dist/
 .env
+config/google-tts-key.json
+1234/
+1234.pub/
