@@ -1,14 +1,13 @@
 import fs from 'fs';
-import { SpeechClient } from '@google-cloud/speech';
-import { TextToSpeechClient } from '@google-cloud/text-to-speech';
+import { SpeechClient, protos as speechProtos } from '@google-cloud/speech';
+import { TextToSpeechClient, protos as ttsProtos } from '@google-cloud/text-to-speech';
 import OpenAI from 'openai';
-import AIUtils from './ai.utils';
 
 // 🔹 Google Cloud istemcileri
 const speechClient = new SpeechClient();
 const ttsClient = new TextToSpeechClient();
 
-// 🔹 OpenAI API istemcisi (Güncellendi)
+// 🔹 OpenAI API istemcisi
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -21,23 +20,25 @@ class AIService {
       const audioBuffer = fs.readFileSync(audioFilePath);
       const audioBytes = audioBuffer.toString('base64');
 
-      const request = {
+      const request: speechProtos.google.cloud.speech.v1.IRecognizeRequest = {
         audio: { content: audioBytes },
         config: {
-          encoding: 'LINEAR16',
+          encoding: speechProtos.google.cloud.speech.v1.RecognitionConfig.AudioEncoding.LINEAR16,
           sampleRateHertz: 16000,
           languageCode: 'tr-TR',
         },
       };
 
-      const [response] = await speechClient.recognize(request);
+      // 🔹 Google Cloud STT API dönüşünü TypeScript'e uygun hale getirdik
+      const response = await speechClient.recognize(request);
+      const results = response[0]?.results || [];
 
-      if (!response.results || response.results.length === 0) {
+      if (results.length === 0) {
         console.log("🎙️ Hiçbir metin tanımlanamadı.");
         return "Ses anlaşılamadı.";
       }
 
-      const transcription = response.results
+      const transcription = results
         .map(result => result.alternatives && result.alternatives.length > 0 ? result.alternatives[0].transcript : '')
         .join(' ');
 
@@ -62,15 +63,31 @@ class AIService {
 
   // 🔹 Google TTS ile metni sese çevir
   async textToSpeech(text: string, outputPath: string): Promise<string> {
-    const request = {
-      input: { text },
-      voice: { languageCode: 'tr-TR', ssmlGender: 'FEMALE' },
-      audioConfig: { audioEncoding: 'MP3' },
-    };
+    try {
+      const request: ttsProtos.google.cloud.texttospeech.v1.ISynthesizeSpeechRequest = {
+        input: { text },
+        voice: {
+          languageCode: 'tr-TR',
+          ssmlGender: ttsProtos.google.cloud.texttospeech.v1.SsmlVoiceGender.FEMALE, // 🔹 Hata düzeltildi
+        },
+        audioConfig: { audioEncoding: ttsProtos.google.cloud.texttospeech.v1.AudioEncoding.MP3 },
+      };
 
-    const [response] = await ttsClient.synthesizeSpeech(request);
-    fs.writeFileSync(outputPath, response.audioContent as Buffer);
-    return outputPath;
+      // 🔹 Google Cloud TTS API dönüşünü TypeScript'e uygun hale getirdik
+      const response = await ttsClient.synthesizeSpeech(request);
+      const audioContent = response[0]?.audioContent;
+
+      if (!audioContent) {
+        throw new Error("Ses üretilemedi.");
+      }
+
+      fs.writeFileSync(outputPath, audioContent);
+      return outputPath;
+      
+    } catch (error) {
+      console.error("❌ TTS hatası:", error);
+      throw new Error("Metin sese dönüştürülürken hata oluştu.");
+    }
   }
 }
 
