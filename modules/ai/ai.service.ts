@@ -2,6 +2,7 @@ import fs from 'fs';
 import { SpeechClient, protos as speechProtos } from '@google-cloud/speech';
 import { TextToSpeechClient, protos as ttsProtos } from '@google-cloud/text-to-speech';
 import OpenAI from 'openai';
+import { AIProfileModel } from './ai.model';
 
 // 🔹 Google Cloud istemcileri
 const speechClient = new SpeechClient();
@@ -14,7 +15,7 @@ const openai = new OpenAI({
 
 class AIService {
   
-  // 🔹 Google Speech-to-Text kullanarak sesi metne çevir
+  // 📌 Ses verisini metne çevir (Google STT)
   async speechToText(audioFilePath: string): Promise<string> {
     try {
       const audioBuffer = fs.readFileSync(audioFilePath);
@@ -29,7 +30,6 @@ class AIService {
         },
       };
 
-      // 🔹 Google Cloud STT API dönüşünü TypeScript'e uygun hale getirdik
       const response = await speechClient.recognize(request);
       const results = response[0]?.results || [];
 
@@ -51,29 +51,72 @@ class AIService {
     }
   }
 
-  // 🔹 OpenAI API ile konuşma oluştur
-  async askAI(text: string): Promise<string> {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [{ role: 'user', content: text }],
-    });
+  // 📌 OpenAI'ye mesaj gönder ve yanıt al (Çocuğun profiline göre kişiselleştirilmiş)
+  async askAI(text: string, userId: string): Promise<string> {
+    try {
+      // Kullanıcının AI profili varsa çekelim
+      const userProfile = await AIProfileModel.findOne({ userId });
 
-    return response.choices[0]?.message?.content || 'Yanıt alınamadı.';
+      // Varsayılan prompt seçenekleri
+      let promptOptions = "Sen bir yardımcı AI'sin.";
+
+      if (userProfile) {
+        const { childName, age, personality, interests } = userProfile;
+
+        const interestString = interests.length > 0 ? `İlgi alanları: ${interests.join(', ')}` : '';
+
+        // Kullanıcıya özel prompt belirleme
+        promptOptions = `Sen bir ${personality} kişiliğe sahip AI'sin. ${childName} isimli çocuk seninle konuşuyor. ${age} yaşında ve ${interestString}. Ona uygun şekilde cevap ver.`;
+
+        console.log(`🎯 AI Profili Kullanılıyor: ${promptOptions}`);
+      } else {
+        console.log(`⚠️ AI Profili bulunamadı, varsayılan yanıt oluşturuluyor.`);
+      }
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          { role: 'system', content: promptOptions },
+          { role: 'user', content: text }
+        ],
+      });
+
+      return response.choices[0]?.message?.content || 'Yanıt alınamadı.';
+
+    } catch (error) {
+      console.error("❌ OpenAI Hatası:", error);
+      throw new Error("AI yanıt oluşturulurken hata oluştu.");
+    }
   }
 
-  // 🔹 Google TTS ile metni sese çevir
-  async textToSpeech(text: string, outputPath: string): Promise<string> {
+  // 📌 Google TTS ile yanıtı sese çevir (Çocuğun tercih ettiği ses tipine göre)
+  async textToSpeech(text: string, outputPath: string, userId: string): Promise<string> {
     try {
+      // Kullanıcının AI profili varsa çekelim
+      const userProfile = await AIProfileModel.findOne({ userId });
+
+      let voiceType: ttsProtos.google.cloud.texttospeech.v1.SsmlVoiceGender =
+        ttsProtos.google.cloud.texttospeech.v1.SsmlVoiceGender.NEUTRAL;
+
+      if (userProfile) {
+        if (userProfile.voiceType === 'Erkek') {
+          voiceType = ttsProtos.google.cloud.texttospeech.v1.SsmlVoiceGender.MALE;
+        } else if (userProfile.voiceType === 'Kadın') {
+          voiceType = ttsProtos.google.cloud.texttospeech.v1.SsmlVoiceGender.FEMALE;
+        } else if (userProfile.voiceType === 'Çocuk') {
+          voiceType = ttsProtos.google.cloud.texttospeech.v1.SsmlVoiceGender.NEUTRAL;
+        }
+      }
+
       const request: ttsProtos.google.cloud.texttospeech.v1.ISynthesizeSpeechRequest = {
         input: { text },
         voice: {
           languageCode: 'tr-TR',
-          ssmlGender: ttsProtos.google.cloud.texttospeech.v1.SsmlVoiceGender.FEMALE, // 🔹 Hata düzeltildi
+          ssmlGender: voiceType,
         },
         audioConfig: { audioEncoding: ttsProtos.google.cloud.texttospeech.v1.AudioEncoding.MP3 },
       };
 
-      // 🔹 Google Cloud TTS API dönüşünü TypeScript'e uygun hale getirdik
       const response = await ttsClient.synthesizeSpeech(request);
       const audioContent = response[0]?.audioContent;
 
