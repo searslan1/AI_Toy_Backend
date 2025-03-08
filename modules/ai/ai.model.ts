@@ -15,7 +15,7 @@ const AIProfileSchema = new Schema<IAIProfile>(
     childName: { type: String, required: true },
     age: { type: Number, required: true },
     personality: { type: String, enum: ["Meraklı", "Eğlenceli", "Sabırlı", "Hızlı Öğrenen"], required: true },
-    voiceType: { type: String, enum: ["Erkek", "Kadın", "Çocuk"], required: true },
+    voiceType: { type: String, enum: ["Erkek", "Kadın", "Çocuk"], required: true, default: "Çocuk" },
     interests: { type: [String], default: [] }, // Boş bırakılabilir
   },
   { timestamps: true }
