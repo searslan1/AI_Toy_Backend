@@ -12,8 +12,13 @@ export class ConversationController {
         return;
       }
 
-      const message = { sender, text, timestamp: new Date() };
-      const result = await ConversationService.sendMessage(childId, deviceId, message);
+      // 🔹 `sender` değerini tip güvenli hale getir
+      if (sender !== "child" && sender !== "ai") {
+        res.status(400).json({ message: "Geçersiz sender değeri. 'child' veya 'ai' olmalıdır." });
+        return;
+      }
+
+      const result = await ConversationService.sendMessage(childId, deviceId, sender, text);
 
       if (!result.success) {
         res.status(500).json({ message: result.message });
@@ -22,7 +27,7 @@ export class ConversationController {
 
       res.status(201).json({ message: "Mesaj başarıyla eklendi.", conversation: result.conversation });
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("❌ Error sending message:", error);
       res.status(500).json({ message: "Sunucu hatası." });
     }
   }
@@ -47,7 +52,7 @@ export class ConversationController {
 
       res.status(200).json({ messages: result.messages });
     } catch (error) {
-      console.error("Error retrieving conversation history:", error);
+      console.error("❌ Error retrieving conversation history:", error);
       res.status(500).json({ message: "Sunucu hatası." });
     }
   }
@@ -71,7 +76,7 @@ export class ConversationController {
 
       res.status(200).json({ message: "Konuşma geçmişi başarıyla temizlendi." });
     } catch (error) {
-      console.error("Error clearing conversation history:", error);
+      console.error("❌ Error clearing conversation history:", error);
       res.status(500).json({ message: "Sunucu hatası." });
     }
   }

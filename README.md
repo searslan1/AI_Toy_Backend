@@ -212,3 +212,51 @@ Bu iskelet, **Node.js + TypeScript** temelinde **modüler, güvenli ve ölçekle
 
 > Bu yol haritası ve yapı kapsamlı bir ticari ürünün temel gereksinimlerini karşılayacak şekilde tasarlanmış olup, ilerleyen aşamalarda operasyonel gerekliliklere (test, deployment, ölçeklendirme) göre genişletilebilir.
 >
+
+
+
+
+
+
+
+
+
+
+
+<!-- genel işeyiş  -->
+
+Bu proje Node.js ve TypeScript ile geliştirilmiş bir backend sistemi olup, Express.js ile API isteklerini yönetir, MongoDB ile veri saklar ve WebSocket ile ESP32 tabanlı akıllı oyuncak cihazlarıyla gerçek zamanlı iletişim kurar. Proje başlatıldığında, server.ts dosyası çalıştırılarak MongoDB bağlantısı kuruluyor, ardından Express.js API sunucusu ve WebSocket sunucusu başlatılıyor. Express, JSON ve cookie işleme middleware'leri ile API isteklerini işlerken, WebSocket sunucusu cihaz bağlantılarını yönetiyor ve veri akışını sağlıyor. Kullanıcılar, /auth/register API çağrısı ile hesap oluşturup JWT tabanlı kimlik doğrulama mekanizmasıyla giriş yapabiliyorlar. Kullanıcı giriş yaptığında JWT token üretiliyor ve çerezlere kaydediliyor, böylece yetkilendirme işlemleri tüm API isteklerinde auth.middleware.ts tarafından kontrol ediliyor. Kullanıcı giriş yaptıktan sonra, /device/register API çağrısı ile bir cihaz (oyuncak) sisteme kaydedilebiliyor. Kayıt edilen cihazlar MongoDB’de şifreli WiFi bilgileriyle saklanıyor ve WebSocket sunucusuna bağlandığında durumu güncelleniyor. Bağlanan cihaz, konuşmaları işlemek için /chat/send-message API’sine mesaj gönderebilir, bu mesajlar MongoDB’de saklanıyor ve AI servisi tarafından analiz edilerek yanıt oluşturuluyor. AI servisi, Google Cloud TTS/STT veya OpenAI GPT-4 kullanarak sesli/matinsel yanıt üretiyor ve oyuncak cihaza iletilmesini sağlıyor. Aynı zamanda, konuşma verileri Analytics modülü tarafından analiz ediliyor ve ebeveynlerin çocuklarının kullanım alışkanlıklarını görmesine olanak tanıyor. Kullanıcı, cihazın ne kadar süre konuştuğunu veya kaç mesaj gönderildiğini öğrenmek için /analytics/usage/:deviceId API’sini kullanarak detaylı kullanım raporları alabiliyor. WebSocket sayesinde ESP32 gibi cihazlar gerçek zamanlı olarak bağlanabiliyor ve durum değişiklikleri (örn. pil seviyesi, bağlantı durumu) sunucuya anında bildiriliyor. Sonuç olarak, sistem kullanıcı girişini, cihaz yönetimini, konuşma işleme sürecini, AI entegrasyonunu ve analitik işlemleri entegre bir şekilde yürütüyor. 🚀
+
+
+
+ESP32 → WebSocket → Device (Bağlantı ve Durum) → AI (Yanıt Üretimi) → WebSocket → ESP32
+                          ↓                             ↑
+                Analytics (Kullanım Takibi)     Conversation (Mesaj Kaydı)
+
+
+✅ ESP32 mesaj gönderdiğinde AI'ya iletilir.
+✅ AI yanıt ürettiğinde ESP32'ye WebSocket ile gönderilir.
+✅ Tüm mesajlar Conversation modülüne kaydedilir.
+✅ ESP32’nin kullanımı Analytics modülü tarafından takip edilir.
+
+
+
+
+2️⃣Device İşleri (Cihaz Yönetimi)
+Device modülü, ESP32 veya başka akıllı oyuncak cihazlarının sisteme kaydedilmesini, durumlarının izlenmesini ve yönetilmesini sağlar.
+
+📌 Cihazın sisteme kaydedilmesi (/device/register)
+📌 Cihazın bağlantı durumu (online/offline)
+📌 Cihazın batarya seviyesini izleme
+📌 Cihazların listelenmesi ve silinmesi
+📌 Cihazın WiFi kimlik bilgilerini saklama (şifreli olarak)
+🚀 Device modülü, cihazların sisteme nasıl kaydedileceğini ve yönetileceğini belirler.
+
+2️⃣ WebSocket İşleri (Gerçek Zamanlı İletişim)
+WebSocket modülü, ESP32 ve backend arasında gerçek zamanlı veri alışverişi sağlar.
+
+📡 Cihazın bağlanması (WebSocket bağlantısı kurulması)
+🔄 Cihazdan gelen verileri işleme (örn. batarya seviyesi güncellemesi)
+💬 Cihazdan gelen mesajları AI servisine yönlendirme
+📩 AI'dan gelen yanıtı WebSocket üzerinden cihaza iletme
+🚀 Gerçek zamanlı olaylar için WebSocket event’leri kullanma
