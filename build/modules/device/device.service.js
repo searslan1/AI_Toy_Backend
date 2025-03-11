@@ -28,5 +28,31 @@ class DeviceService {
             return yield device_model_1.DeviceModel.findByIdAndUpdate(deviceId, data, { new: true });
         });
     }
+    // ✅ listDevices metodunu ekleyin
+    listDevices(ownerId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const devices = yield device_model_1.DeviceModel.find({ ownerId });
+                return { success: true, devices };
+            }
+            catch (error) {
+                console.error("❌ Cihazları listeleme hatası:", error);
+                return { success: false, message: "Cihazlar listelenirken hata oluştu." };
+            }
+        });
+    }
+    // ✅ removeDevice metodunu ekleyin
+    removeDevice(deviceId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield device_model_1.DeviceModel.findByIdAndDelete(deviceId);
+                return { success: true, message: "Cihaz başarıyla silindi." };
+            }
+            catch (error) {
+                console.error("❌ Cihaz silme hatası:", error);
+                return { success: false, message: "Cihaz silinirken hata oluştu." };
+            }
+        });
+    }
 }
 exports.default = new DeviceService();
