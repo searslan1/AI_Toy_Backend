@@ -240,8 +240,6 @@ ESP32 → WebSocket → Device (Bağlantı ve Durum) → AI (Yanıt Üretimi) �
 ✅ ESP32’nin kullanımı Analytics modülü tarafından takip edilir.
 
 
-
-
 2️⃣Device İşleri (Cihaz Yönetimi)
 Device modülü, ESP32 veya başka akıllı oyuncak cihazlarının sisteme kaydedilmesini, durumlarının izlenmesini ve yönetilmesini sağlar.
 
@@ -260,3 +258,13 @@ WebSocket modülü, ESP32 ve backend arasında gerçek zamanlı veri alışveri�
 💬 Cihazdan gelen mesajları AI servisine yönlendirme
 📩 AI'dan gelen yanıtı WebSocket üzerinden cihaza iletme
 🚀 Gerçek zamanlı olaylar için WebSocket event’leri kullanma
+
+
+
+
+
+
+
+eklenmemız gerekenler ::::
+
+konuya ait kategorileri geçmişten tarayıp cevab versin .

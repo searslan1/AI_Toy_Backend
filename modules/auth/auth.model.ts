@@ -1,19 +1,20 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, Document } from "mongoose";
 
-interface IUser {
-name: string;
+export interface IUser extends Document {
+  name: string;
   email: string;
   password: string;
-  // İleride çocuk bilgilerini ekleyebilirsin (örneğin children?: IChild[] vb.)
+  children?: string[]; // Çocukların ID'lerini saklamak için
 }
 
-const userSchema = new Schema<IUser>(
+const UserSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true }
+    password: { type: String, required: true, select: false }, // Güvenlik için
+    children: [{ type: Schema.Types.ObjectId, ref: "AIProfile" }],
   },
   { timestamps: true }
 );
 
-export const UserModel = model<IUser>("User", userSchema);
+export const UserModel = model<IUser>("User", UserSchema);
