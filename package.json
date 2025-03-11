@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon server.ts",
     "build": "tsc",
-    "start": "node build/server.js"
+    "start": "node build/app.js"
   },
   "keywords": [],
   "author": "",
